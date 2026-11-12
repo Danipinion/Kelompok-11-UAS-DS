@@ -1,4 +1,3 @@
----
 ## INFORMASI PROYEK
 **Judul Proyek:**  
 Deteksi Kualitas Kematangan Buah Kelapa Sawit Berbasis Visi Komputer untuk Petani Swadaya
@@ -11,16 +10,14 @@ Deteksi Kualitas Kematangan Buah Kelapa Sawit Berbasis Visi Komputer untuk Petan
 1. 244311048  
 2. 244311054  
 
-**Program Studi:** Rekayasa Perangkat Lunak
-**Mata Kuliah:** Datascience
-**Dosen Pengampu:** [Nama Dosen]  
-**Tahun Akademik:** 2026/5  
-**Link GitHub Repository:** https://github.com/Danipinion/Kelompok-11-UAS-DS
-**Link Video Pembahasan:** [URL Video (YouTube/Drive)]  
-**SDG yang Dipilih:** SDG 8 – Pekerjaan Layak dan Pertumbuhan Ekonomi  
-**Target SDG yang Relevan:** Target 8.2 – mencapai tingkat produktivitas ekonomi yang lebih tinggi melalui diversifikasi, peningkatan teknologi, dan inovasi; serta Target 8.3 – mendukung kegiatan produktif dan pertumbuhan usaha mikro, kecil, dan menengah
-
----
+- **Program Studi:** Rekayasa Perangkat Lunak
+- **Mata Kuliah:** Datascience
+- **Dosen Pengampu:** [Nama Dosen]  
+- **Tahun Akademik:** 2026/5  
+- **Link GitHub Repository:** https://github.com/Danipinion/Kelompok-11-UAS-DS
+- **Link Video Pembahasan:** [URL Video (YouTube/Drive)]  
+- **SDG yang Dipilih:** SDG 8 – Pekerjaan Layak dan Pertumbuhan Ekonomi  
+- **Target SDG yang Relevan:** Target 8.2 – mencapai tingkat produktivitas ekonomi yang lebih tinggi melalui diversifikasi, peningkatan teknologi, dan inovasi; serta Target 8.3 – mendukung kegiatan produktif dan pertumbuhan usaha mikro, kecil, dan menengah
 
 ## 0. KERANGKA ML LIFECYCLE (L-M-O-P)
 
