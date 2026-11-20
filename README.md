@@ -229,51 +229,86 @@ Bagian ini menjelaskan **semua** proses transformasi dan preprocessing data yang
 
 ### 5.1 Data Cleaning
 
-**Missing Values / Label Tidak Valid**
+**Missing Values**
  
 ```
-Temuan : 622 data (9,70%) tidak memenuhi format One-Hot (label kosong atau multi-label)
-Strategi: Data tersebut dikeluarkan dari training, validation, dan test
-Alasan  : Label kosong tidak memiliki ground truth. Pada label multi-label tidak diketahui
-          kelas yang benar. Memilih salah satu secara acak atau dengan argmax akan
-          memasukkan noise label dan membuat metrik evaluasi tidak dapat dipercaya.
-          Proporsinya 9,70% sehingga sisa data (5.790) masih memadai.
+Kondisi : Seluruh 6.412 nama file pada CSV cocok dengan gambar yang tersedia
+Strategi: Tidak ada imputasi atau penghapusan gambar karena file hilang
+Catatan : Masalah data yang sebenarnya ada pada kualitas label (di bawah)
 ```
  
-Jumlah akhir per partisi setelah pembersihan: *(isi dari notebook: train = ..., valid = ..., test = ...)*. Distribusi kelas dihitung ulang setelah pembersihan karena bisa berubah.
+**Label Tidak Valid**
+ 
+```
+Kondisi : 622 data (9,70%) tidak memenuhi format One-Hot Encoding
+          (label kosong dengan seluruh nilai 0, atau multi-label dengan lebih dari satu nilai 1)
+          Sisanya 5.790 data (90,30%) memiliki tepat satu label aktif
+Strategi: Data dengan jumlah label aktif != 1 dikeluarkan dari training, validation, dan test
+Alasan  : Label kosong tidak punya ground truth. Pada multi-label tidak diketahui kelas
+          yang benar. Memilih salah satu secara acak atau dengan argmax memasukkan
+          noise label dan membuat metrik evaluasi tidak dapat dipercaya.
+          Proporsinya 9,70% sehingga 5.790 data yang tersisa masih memadai.
+```
+ 
+Jumlah data valid setelah pembersihan: *(isi dari notebook: train = ..., valid = ..., test = ...)*. Distribusi kelas dihitung ulang setelah pembersihan karena bisa berubah setelah 622 data dikeluarkan.
+ 
+```python
+CLASSES = ["overripe", "ripe", "underripe", "unripe"]   # urutan kolom CSV
+ 
+def load_clean(csv_path):
+    df = pd.read_csv(csv_path)
+    df.columns = df.columns.str.strip()              # jaga-jaga spasi tersembunyi pada nama kolom
+    n_active = df[CLASSES].sum(axis=1)
+    invalid = df[n_active != 1]                      # label kosong atau multi-label
+    valid = df[n_active == 1].copy()
+    valid["label"] = valid[CLASSES].values.argmax(axis=1)
+    return valid, invalid
+```
  
 **Duplicate Data**
  
 ```
-Pemeriksaan: SHA-256 pada seluruh 6.412 gambar, hasilnya semuanya unik
-Tambahan   : Perceptual hash (pHash) antarpartisi untuk mendeteksi gambar yang
-             sangat mirip tetapi tidak identik byte-nya (hasil crop/augmentasi)
-Tindakan   : Jika ada pasangan mirip antara train dan valid/test, gambar pada
-             valid/test dipertahankan dan padanannya di train dihapus
+Pemeriksaan awal  : SHA-256 pada 6.412 gambar, semuanya unik
+Keterbatasan      : SHA-256 hanya mendeteksi duplikat yang identik byte-nya
+Pemeriksaan lanjut: Perceptual hash (pHash) antara train vs valid dan test
+Tindakan          : Pasangan dengan jarak Hamming kecil diperiksa secara visual.
+                    Jika terbukti gambar yang sama, gambar di valid/test dipertahankan
+                    dan padanannya di train dihapus.
 ```
  
-SHA-256 hanya mendeteksi duplikat persis. Karena dataset memuat hasil augmentasi, pHash perlu dijalankan untuk memastikan tidak ada data leakage.
+Langkah pHash dilakukan untuk memastikan tidak ada kemiripan gambar antarpartisi yang menyebabkan data leakage. pHash tidak sepenuhnya tahan terhadap flip dan rotasi, sehingga hasilnya dipakai sebagai pemeriksaan tambahan, bukan jaminan mutlak.
+ 
+```python
+import imagehash
+from PIL import Image
+ 
+def phash_bits(path):
+    return imagehash.phash(Image.open(path)).hash.flatten()   # 64 bit
+ 
+# Bandingkan hash train vs valid/test secara bertahap; kandidat jika jarak Hamming <= 5
+# (ambang awal, sesuaikan setelah inspeksi visual)
+```
  
 **Outliers**
  
 ```
-Temuan  : 114 gambar (1,78%) outlier pada file_size_kb (metode IQR)
-Strategi: Inspeksi visual sampel outlier, lalu dipertahankan jika citra valid
-Alasan  : Ukuran file yang besar umumnya menandakan tekstur/detail latar yang
-          kompleks, bukan kerusakan. Menghapusnya justru mengurangi variasi
-          yang dibutuhkan model agar robust.
+Kondisi : 114 gambar (1,78%) terindikasi outlier pada ukuran file (metode IQR).
+          Tidak ada outlier pada resolusi (width, height) maupun rasio aspek.
+Strategi: Inspeksi visual sampel gambar outlier, lalu dipertahankan jika citra valid.
+Alasan  : Ukuran file besar umumnya menandakan detail tekstur atau latar yang kompleks,
+          bukan kerusakan citra. Menghapusnya justru mengurangi variasi yang
+          dibutuhkan agar model robust.
+Hasil   : [isi setelah inspeksi: jumlah gambar outlier yang ternyata rusak/tidak valid, bila ada]
 ```
  
 **Data Type Conversion**
  
 ```
-- Nama kolom di-strip untuk menghilangkan spasi tersembunyi
-- Label One-Hot (4 kolom) diubah menjadi indeks kelas dengan argmax
-  (Overripe=0, Ripe=1, Underripe=2, Unripe=3)
+- Label One-Hot (4 kolom) diubah menjadi indeks kelas dengan argmax:
+  overripe=0, ripe=1, underripe=2, unripe=3 (sesuai urutan kolom CSV)
 - Untuk model DL, label diubah kembali menjadi one-hot (categorical_crossentropy)
 - Gambar dibaca sebagai array uint8 (H, W, 3) dalam urutan RGB
 ```
- 
 
 ### 5.2 Feature Engineering
 
@@ -298,7 +333,9 @@ Feature engineering hanya dilakukan untuk Model 1 dan Model 2 (klasik). Model 3 
 | Bentuk | Rasio luas kontur terbesar, aspect ratio bounding box, solidity, circularity (kontur dari segmentasi Otsu pada channel saturation) | 4 |
 | **Total** | | **79** |
  
-Feature selection: tidak dilakukan di awal karena Random Forest tahan terhadap fitur kurang relevan. Setelah training, feature importance dipakai untuk analisis di Bab 7. Reduksi dimensi (PCA, 95% variance) hanya dicoba opsional pada SVM bila training terlalu lambat.
+**Alasan pemilihan fitur:** Warna adalah penanda utama kematangan sawit, tekstur menangkap perbedaan permukaan buah, dan bentuk dipakai Random Forest sebagai informasi tambahan. Fitur warna sensitif terhadap pencahayaan, sehingga hal ini dianalisis pada tahap evaluasi.
+ 
+**Feature selection:** Tidak dilakukan di awal karena Random Forest tahan terhadap fitur kurang relevan. Feature importance dipakai untuk analisis di Bab 7. **Reduksi dimensi:** PCA (95% variance) hanya dicoba opsional pada SVM bila training terlalu lambat.
  
 ```python
 def extract_hsv_hist(img_rgb, bins=(8, 8, 8)):
@@ -317,10 +354,10 @@ def extract_glcm(img_rgb):
 
 | Langkah | Model Klasik (SVM, RF) | Model DL (MobileNetV2) |
 | ------- | ---------------------- | ---------------------- |
-| Resizing | 224×224 sebelum ekstraksi fitur | 224×224×3 (ukuran input standar MobileNetV2; dari 640×640 hasil Roboflow) |
+| Resizing | 224×224 sebelum ekstraksi fitur | 224×224×3 (input standar MobileNetV2; dari 640×640 hasil preprocessing dataset) |
 | Color space | RGB ke HSV untuk fitur warna, ke grayscale untuk GLCM/LBP | RGB |
 | Normalisasi | `StandardScaler` pada vektor fitur (fit hanya di train) | `mobilenet_v2.preprocess_input` (piksel ke rentang [-1, 1]) |
-| Augmentasi | Tidak ada tambahan (cukup data hasil Roboflow) | Ringan, hanya pada train, di dalam pipeline |
+| Augmentasi | Tidak ada tambahan | Ringan, hanya pada train, di dalam pipeline |
  
 **Augmentasi tambahan untuk DL (hanya training):**
  
@@ -333,62 +370,63 @@ data_augmentation = keras.Sequential([
 ])
 ```
  
-Alasan dibuat ringan: pada training sudah ada 3 variasi per citra dari Roboflow (flip, rotasi, shear, hue, saturation, brightness, exposure, blur, noise), dan *adaptive equalization* sudah diterapkan. Augmentasi berlebihan, terutama pada hue, dapat mengubah warna yang justru menjadi sinyal utama kematangan. Karena itu augmentasi hue/saturation tidak diulang pada tahap ini.
+**Alasan dibuat ringan:** Data training sudah diaugmentasi 3 variasi per citra (flipping, rotasi, shear, hue, saturation, brightness, exposure, blur, noise) dan *adaptive equalization* sudah diterapkan. Mengulang augmentasi berat berisiko mengubah warna yang justru menjadi sinyal utama kematangan, sehingga augmentasi hue dan saturation tidak diulang.
+ 
+**Penanganan noise pencahayaan:** Gambar tidak dibuang berdasarkan kondisi pencahayaan atau bayangan, karena variasi itu realistis di kebun. Ketahanan model terhadap kondisi tersebut dianalisis pada error analysis di Bab 7.
  
 ### 5.4 Data Splitting
 
-Dataset menggunakan **partisi bawaan** (tidak di-split ulang):
+**Strategi pembagian data:** menggunakan **partisi bawaan** dataset (tidak di-split ulang).
  
 ```
-- Training set  : 5.610 sampel awal (87,49%)  -> setelah pembersihan: [isi]
-- Validation set:   535 sampel awal  (8,34%)  -> setelah pembersihan: [isi]
-- Test set      :   267 sampel awal  (4,16%)  -> setelah pembersihan: [isi]
+- Training set  : 5.610 sampel awal (87,49%) -> setelah pembersihan: [isi]
+- Validation set:   535 sampel awal  (8,34%) -> setelah pembersihan: [isi]
+- Test set      :   267 sampel awal  (4,16%) -> setelah pembersihan: [isi]
 - Random seed   : 42 (numpy, random, tensorflow, scikit-learn)
 ```
  
 **Alasan:**
  
-1. Partisi bawaan sudah memisahkan data augmentasi (hanya di train) dari validation/test. Split acak ulang akan mencampur varian hasil augmentasi dari citra yang sama ke ketiga partisi sehingga terjadi data leakage.
-2. Validation set dipakai untuk tuning (Grid Search dengan `PredefinedSplit`, early stopping, dan pemilihan learning rate). Test set hanya dipakai **sekali** di Bab 7.
-3. Test set relatif kecil (267 gambar sebelum pembersihan), sehingga metrik per kelas memiliki ketidakpastian yang cukup besar (sekitar 50–70 gambar per kelas). Hal ini dicatat sebagai keterbatasan di Bab 7.
-4. Scaler (`StandardScaler`) hanya di-fit pada fitur training, lalu diterapkan ke validation dan test.
+1. Augmentasi hanya diterapkan pada citra training. Dengan memakai partisi bawaan, variasi hasil augmentasi dari satu citra tidak tersebar ke validation dan test. Split acak ulang berisiko mencampurkannya sehingga terjadi data leakage.
+2. Validation set dipakai untuk tuning (Grid Search dengan `PredefinedSplit`, early stopping, pemilihan learning rate). Test set hanya dipakai **sekali** pada Bab 7.
+3. Test set kecil (267 gambar sebelum pembersihan) sehingga metrik per kelas punya ketidakpastian yang cukup besar. Ini dicatat sebagai keterbatasan di Bab 7.
+4. `StandardScaler` hanya di-fit pada fitur training, lalu diterapkan ke validation dan test.
+5. Kemiripan gambar antarpartisi diperiksa dengan pHash (5.1).
 
 ### 5.5 Data Balancing (jika diperlukan)
 
-**Teknik yang digunakan:**
-
+**Teknik yang digunakan:** Class weights.
+ 
 ```
-Imbalance ratio : 1,59 (Overripe 1.831 vs Unripe 1.154), dihitung ulang setelah cleaning
+Imbalance ratio : 1,59 (Overripe 1.831 vs Unripe 1.154)
+                  Dihitung ulang setelah 622 data tidak valid dikeluarkan: [isi]
 Teknik          : Class weights
 Tidak dipakai   : SMOTE, undersampling
 ```
  
-Ketidakseimbangan tergolong ringan. SMOTE pada vektor fitur dapat menghasilkan sampel sintetis yang tidak realistis, dan pada DL tidak bisa diterapkan langsung ke citra. Undersampling membuang data pada dataset yang sudah terbatas. Class weights menjaga seluruh data dan cukup untuk imbalance sebesar ini.
+Ketidakseimbangan tergolong ringan. SMOTE pada vektor fitur dapat menghasilkan sampel sintetis yang tidak realistis dan tidak bisa diterapkan langsung ke citra untuk DL. Undersampling membuang data pada dataset yang terbatas. Class weights menjaga seluruh data dan cukup untuk rasio sebesar ini. Macro F1-Score sebagai metrik utama menjaga agar kelas minoritas Unripe tetap terwakili dalam evaluasi.
  
 ```python
 from sklearn.utils.class_weight import compute_class_weight
 weights = compute_class_weight("balanced", classes=np.unique(y_train), y=y_train)
-class_weight = dict(enumerate(weights))   # untuk Keras; pada SVC/RF pakai class_weight="balanced"
+class_weight = dict(enumerate(weights))   # Keras; pada SVC dan RF pakai class_weight="balanced"
 ```
  
-Metrik utama Macro F1-Score digunakan agar kelas minoritas (Unripe) tetap terwakili dalam evaluasi.
 ### 5.6 Ringkasan Data Preparation
 
 **Per langkah, jelaskan:**
 
 | No | Apa yang dilakukan | Mengapa penting | Bagaimana implementasinya |
 | -- | ------------------ | --------------- | ------------------------- |
-| 1 | Menghapus 622 data berlabel tidak valid | Label ambigu merusak training dan evaluasi | Filter baris dengan jumlah label aktif ≠ 1 pada CSV tiap partisi |
-| 2 | Pemeriksaan duplikat (SHA-256 + pHash) | Mencegah data leakage antarpartisi | Hash gambar, bandingkan antarpartisi, hapus padanan di train |
-| 3 | Mempertahankan outlier ukuran file | Menjaga variasi data, outlier tidak berarti rusak | Inspeksi visual sampel, tanpa penghapusan |
+| 1 | Mengeluarkan 622 data berlabel tidak valid | Label ambigu merusak training dan evaluasi | Filter baris dengan jumlah label aktif != 1 pada CSV tiap partisi |
+| 2 | Pemeriksaan kemiripan antarpartisi dengan pHash | SHA-256 tidak menangkap gambar yang mirip, mencegah data leakage | Hash gambar, bandingkan train vs valid/test, hapus padanan di train |
+| 3 | Mempertahankan outlier ukuran file setelah inspeksi visual | Menjaga variasi data, outlier tidak berarti rusak | Inspeksi visual sampel, tanpa penghapusan massal |
 | 4 | Konversi label One-Hot ke indeks kelas | Format yang dibutuhkan scikit-learn | `argmax` pada 4 kolom kelas |
-| 5 | Ekstraksi fitur HSV/GLCM/LBP/bentuk | Menerjemahkan citra ke vektor fitur untuk SVM dan RF | OpenCV dan scikit-image, 522 fitur (SVM) dan 79 fitur (RF) |
+| 5 | Ekstraksi fitur HSV, GLCM, LBP, dan bentuk | Mengubah citra menjadi vektor fitur untuk SVM dan RF | OpenCV dan scikit-image, 522 fitur (SVM) dan 79 fitur (RF) |
 | 6 | Resize 224×224 dan `preprocess_input` | Sesuai input MobileNetV2 pre-trained | Pipeline `tf.data` |
-| 7 | Augmentasi ringan pada train | Menambah variasi tanpa merusak sinyal warna | Layer augmentasi Keras, hanya aktif saat training |
-| 8 | Menggunakan partisi bawaan, scaler di-fit di train | Menghindari kebocoran dari validation/test | `StandardScaler.fit` hanya pada train |
+| 7 | Augmentasi ringan hanya pada train | Menambah variasi tanpa merusak sinyal warna | Layer augmentasi Keras, aktif hanya saat training |
+| 8 | Memakai partisi bawaan, scaler di-fit di train | Menghindari kebocoran dari validation dan test | `StandardScaler.fit` hanya pada train |
 | 9 | Class weights | Mengatasi imbalance ringan tanpa membuang data | `class_weight="balanced"` / `compute_class_weight` |
- 
----
 ## 6. MODELING **[M + O]**
 
 > Setiap model (6.1, 6.2, 6.3) dijelaskan dalam dua fase: **Model Design [M]** (sub-bagian .1–.3) dan **Optimization [O]** (sub-bagian .4–.6).
