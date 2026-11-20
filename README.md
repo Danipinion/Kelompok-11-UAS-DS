@@ -140,7 +140,7 @@ Pada tahap **L**, masalah dirumuskan sebagai klasifikasi citra multikelas (3–4
 ### 4.1 Informasi Dataset
 
 **Sumber Dataset:**  
-[Sebutkan sumber: Kaggle, UCI ML Repository, atau sumber lain dengan URL]
+Ripeness Dataset (Kaggle)](https://www.kaggle.com/datasets/kunals99/outdoor-oil-palm-fruit-ripeness-dataset)
 
 **Deskripsi Dataset:**
 
