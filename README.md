@@ -1,22 +1,25 @@
 ## INFORMASI PROYEK
+
 **Judul Proyek:**  
 Deteksi Kualitas Kematangan Buah Kelapa Sawit Berbasis Visi Komputer untuk Petani Swadaya
 
-**Nama Mahasiswa:**  
-1. Mohammad Dani Taufiqurrohman  
-2. Raditya Alfareza Purnama Putra  
+**Nama Mahasiswa:**
 
-**NIM:**  
-1. 244311048  
-2. 244311054  
+1. Mohammad Dani Taufiqurrohman
+2. Raditya Alfareza Purnama Putra
+
+**NIM:**
+
+1. 244311048
+2. 244311054
 
 - **Program Studi:** Rekayasa Perangkat Lunak
 - **Mata Kuliah:** Datascience
-- **Dosen Pengampu:** [Nama Dosen]  
-- **Tahun Akademik:** 2026/5  
+- **Dosen Pengampu:** [Nama Dosen]
+- **Tahun Akademik:** 2026/5
 - **Link GitHub Repository:** https://github.com/Danipinion/Kelompok-11-UAS-DS
-- **Link Video Pembahasan:** [URL Video (YouTube/Drive)]  
-- **SDG yang Dipilih:** SDG 8 – Pekerjaan Layak dan Pertumbuhan Ekonomi  
+- **Link Video Pembahasan:** [URL Video (YouTube/Drive)]
+- **SDG yang Dipilih:** SDG 8 – Pekerjaan Layak dan Pertumbuhan Ekonomi
 - **Target SDG yang Relevan:** Target 8.2 – mencapai tingkat produktivitas ekonomi yang lebih tinggi melalui diversifikasi, peningkatan teknologi, dan inovasi; serta Target 8.3 – mendukung kegiatan produktif dan pertumbuhan usaha mikro, kecil, dan menengah
 
 ## 0. KERANGKA ML LIFECYCLE (L-M-O-P)
@@ -90,7 +93,7 @@ Studi terdahulu menunjukkan bahwa pendekatan _deep learning_ efektif untuk mengk
 
 ### 2.3 Ringkasan Alur Lifecycle Proyek
 
-Pada tahap **L**, masalah dirumuskan sebagai klasifikasi citra multikelas (3–4 kelas kematangan) dengan dataset _Outdoor Oil Palm Fruit Ripeness_ dari Kaggle, lalu data dipersiapkan (pembersihan, _resizing_, augmentasi, dan _splitting_ tanpa kebocoran data). Pada tahap **M**, dirancang tiga model: SVM dengan fitur warna HSV/tekstur GLCM sebagai baseline, Random Forest dengan fitur warna, tekstur, dan bentuk sebagai model advanced, serta CNN _transfer learning_ MobileNetV2 sebagai model deep learning. Pada tahap **O**, model dilatih dan dioptimasi (tuning hyperparameter, regularisasi, pengaturan learning rate dan batch size). Pada tahap **P**, ketiga model dievaluasi pada test set dengan Macro F1-Score, Accuracy, Precision, dan Recall, disertai analisis kesalahan (misalnya pada kondisi pencahayaan sulit). Hasil evaluasi digunakan untuk satu iterasi perbaikan pada tahap L/M/O.
+Pada tahap **L**, masalah dirumuskan sebagai klasifikasi citra multikelas (4 kelas kematangan) dengan dataset _Outdoor Oil Palm Fruit Ripeness_ dari Kaggle, lalu data dipersiapkan (pembersihan, _resizing_, augmentasi, dan _splitting_ tanpa kebocoran data). Pada tahap **M**, dirancang tiga model: SVM dengan fitur warna HSV/tekstur GLCM sebagai baseline, Random Forest dengan fitur warna, tekstur, dan bentuk sebagai model advanced, serta CNN _transfer learning_ MobileNetV2 sebagai model deep learning. Pada tahap **O**, model dilatih dan dioptimasi (tuning hyperparameter, regularisasi, pengaturan learning rate dan batch size). Pada tahap **P**, ketiga model dievaluasi pada test set dengan Macro F1-Score, Accuracy, Precision, dan Recall, disertai analisis kesalahan (misalnya pada kondisi pencahayaan sulit). Hasil evaluasi digunakan untuk satu iterasi perbaikan pada tahap L/M/O.
 
 ---
 
@@ -98,22 +101,22 @@ Pada tahap **L**, masalah dirumuskan sebagai klasifikasi citra multikelas (3–4
 
 ### 3.1 Problem Statements
 
-1. Penilaian kematangan TBS secara manual bersifat subjektif sehingga petani swadaya sering dirugikan oleh penyortiran sepihak dan harga jual yang rendah.
-2. Sistem harus dapat mengenali fase kematangan buah kelapa sawit (misalnya Mentah, Mengkal, Matang, Lewat Matang) secara otomatis dari citra RGB.
-3. Citra diambil di kebun dengan kondisi pencahayaan yang bervariasi (_backlight_, mendung, bayangan pelepah), sehingga diperlukan preprocessing dan model yang tahan terhadap variasi tersebut.
-4. Dataset berukuran terbatas dan kemungkinan tidak seimbang (_imbalanced_), sehingga dibutuhkan model _deep learning_ yang ringan dengan _transfer learning_ serta metrik evaluasi yang sesuai.
+1. Penilaian kematangan TBS secara manual bersifat subjektif sehingga petani swadaya berpotensi dirugikan oleh penyortiran sepihak dan harga jual yang rendah.
+2. Sistem harus dapat mengenali empat kelas kematangan buah kelapa sawit (Unripe, Underripe, Ripe, dan Overripe) secara otomatis berdasarkan citra RGB.
+3. Citra memiliki variasi kondisi visual, sehingga diperlukan preprocessing dan augmentasi untuk meningkatkan kemampuan model dalam mengenali kematangan buah pada berbagai kondisi.
+4. Dataset memiliki jumlah dan distribusi kelas yang perlu diperhatikan, sehingga dibutuhkan model deep learning ringan berbasis transfer learning serta metrik evaluasi yang sesuai.
 
 ### 3.2 Formulasi Learning Problem (WAJIB)
 
-| Komponen      | Pertanyaan Panduan                                                                                          | Jawaban Anda                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| ------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Target**    | Apa yang diprediksi? Jenis tugas (klasifikasi biner/multikelas, regresi, forecasting, clustering, dll.)?    | Kelas kematangan buah kelapa sawit (3–4 kelas, misalnya Mentah, Mengkal, Matang, Lewat Matang). Jenis tugas: _image classification_ multikelas (_computer vision_).                                                                                                                                                                                                                                                                                   |
-| **Objective** | Apa yang dioptimalkan/diminimalkan secara matematis (misal: cross-entropy, MSE)? Metrik keberhasilan utama? | Meminimalkan _categorical cross-entropy_ pada model deep learning (dan fungsi loss yang sesuai pada SVM dan Random Forest). Metrik utama: **Macro F1-Score** (karena kelas kemungkinan tidak seimbang), dengan pendukung Accuracy, Precision, dan Recall.                                                                                                                                                                                             |
-| **Data**      | Sumber, ukuran, jenis, dan asumsi tentang data (i.i.d.? distribusi train vs test?)                          | Sumber: [Outdoor Oil Palm Fruit Ripeness Dataset (Kaggle)](https://www.kaggle.com/datasets/kunals99/outdoor-oil-palm-fruit-ripeness-dataset). Jenis: citra RGB. Ukuran: sekitar 500–700 citra awal dari 176 sampel tandan buah yang difoto dari 3–4 sudut berbeda; perkiraan ukuran file 100–200 MB. Asumsi: data i.i.d. antar citra, dengan catatan citra dari tandan yang sama berpotensi mirip sehingga _splitting_ perlu mencegah kebocoran data. |
+| Komponen      | Pertanyaan Panduan                                                                                          | Jawaban Anda                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Target**    | Apa yang diprediksi? Jenis tugas (klasifikasi biner/multikelas, regresi, forecasting, clustering, dll.)?    | Kelas kematangan buah kelapa sawit (4 kelas: Unripe, Underripe, Ripe, dan Overripe). Jenis tugas: _image classification_ multikelas (_computer vision_).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **Objective** | Apa yang dioptimalkan/diminimalkan secara matematis (misal: cross-entropy, MSE)? Metrik keberhasilan utama? | Meminimalkan _categorical cross-entropy_ pada model deep learning (dan fungsi loss yang sesuai pada SVM dan Random Forest). Metrik utama: **Macro F1-Score** untuk memperhatikan performa setiap kelas, dengan metrik pendukung Accuracy, Precision, dan Recall.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Data**      | Sumber, ukuran, jenis, dan asumsi tentang data (i.i.d.? distribusi train vs test?)                          | Sumber: [Oil Palm FFB Ripeness Dataset (Roboflow Universe)](https://universe.roboflow.com/fyp-oil-palm-fruit-ripeness-dataset/oil-palm-ffb-ripeness). Jenis: citra RGB. Ukuran: **6.412 citra**, terdiri dari 5.610 citra training, 535 citra validation, dan 267 citra testing. Preprocessing: Auto-Orient, resize _stretch_ ke 640×640 piksel, dan _adaptive equalization_ untuk penyesuaian kontras. Augmentasi: menghasilkan 3 variasi per citra training melalui flipping, rotasi, shear, penyesuaian hue, saturation, brightness, exposure, blur, dan noise. Asumsi: data antarpartisi dianggap mewakili distribusi yang sama, dengan evaluasi tetap memperhatikan potensi kemiripan citra agar tidak terjadi _data leakage_. |
 
 ### 3.3 Goals
 
-1. Membangun model klasifikasi citra yang dapat mengenali 3–4 fase kematangan buah kelapa sawit secara objektif dengan Macro F1-Score ≥ 0,80 (target awal, dapat disesuaikan setelah EDA).
+1. Membangun model klasifikasi citra yang dapat mengenali 4 fase kematangan buah kelapa sawit secara objektif dengan Macro F1-Score ≥ 0,80 (target awal, dapat disesuaikan setelah EDA).
 2. Mengukur dan membandingkan performa tiga pendekatan model: SVM (baseline), Random Forest (advanced), dan CNN MobileNetV2 (deep learning).
 3. Menentukan model terbaik berdasarkan Macro F1-Score, Accuracy, Precision, dan Recall, serta menganalisis ketahanan model terhadap variasi pencahayaan kebun.
 4. Menghasilkan sistem yang _reproducible_ dan ringan sehingga siap dikembangkan menjadi aplikasi mobile bagi petani.
@@ -135,85 +138,87 @@ Pada tahap **L**, masalah dirumuskan sebagai klasifikasi citra multikelas (3–4
 
 ---
 
-## 4. DATA UNDERSTANDING **[L]**
+## 4. DATA UNDERSTANDING
 
 ### 4.1 Informasi Dataset
 
 **Sumber Dataset:**  
-Ripeness Dataset (Kaggle)](https://www.kaggle.com/datasets/kunals99/outdoor-oil-palm-fruit-ripeness-dataset)
+[Oil Palm FFB Ripeness Dataset - Roboflow Universe](https://universe.roboflow.com/fyp-oil-palm-fruit-ripeness-dataset/oil-palm-ffb-ripeness)
 
 **Deskripsi Dataset:**
 
-- Jumlah baris (rows): [angka]
-- Jumlah kolom (columns/features): [angka]
-- Tipe data: [Tabular / Image / Text / Time Series / Audio / Video]
-- Ukuran dataset: [MB/GB]
-- Format file: [CSV / JSON / Images / TXT / etc.]
+- Jumlah baris (rows): 6.412 data gambar.
+- Jumlah kolom (columns/features): 5 kolom pada file CSV.
+- Tipe data: Image (RGB) dengan label kategorikal.
+- Ukuran dataset: 695.08 MB.
+- Format file: jpg untuk citra dan CSV untuk anotasi label.
+
+Dataset terdiri dari empat kelas kematangan buah kelapa sawit, yaitu Overripe, Ripe, Underripe, dan Unripe. Dataset dibagi menjadi tiga partisi:
+
+| Partisi    | Jumlah Gambar |
+| ---------- | ------------: |
+| Training   |         5.610 |
+| Validation |           535 |
+| Testing    |           267 |
+| **Total**  |     **6.412** |
 
 ### 4.2 Deskripsi Fitur
 
-Jelaskan setiap fitur/kolom yang ada dalam dataset.
-**Contoh tabel:**
-| Nama Fitur | Tipe Data | Deskripsi | Contoh Nilai |
-|------------|-----------|-----------|--------------|
-| id | Integer | ID unik data | 1, 2, 3 |
-| age | Integer | Usia (tahun) | 25, 30, 45 |
-| income | Float | Pendapatan (juta) | 5.5, 10.2 |
-| category | Categorical | Kategori produk | A, B, C |
-| text | String | Teks ulasan | "Produk bagus..." |
-| image | Image | Citra 224x224 RGB | Array 224x224x3 |
-| label | Categorical | Label target | 0, 1 atau "positif", "negatif" |
+Dataset menggunakan file CSV pada setiap partisi untuk menghubungkan nama gambar dengan label kelas menggunakan format One-Hot Encoding.
 
-**[Buat tabel deskripsi fitur Anda di sini]**
+| Nama Fitur | Tipe Data | Deskripsi                    | Contoh Nilai |
+| ---------- | --------- | ---------------------------- | ------------ |
+| filename   | String    | Nama file citra kelapa sawit | ripe-316.jpg |
+| overripe   | Binary    | Indikator kelas lewat matang | 0 atau 1     |
+| ripe       | Binary    | Indikator kelas matang       | 0 atau 1     |
+| underripe  | Binary    | Indikator kelas mengkal      | 0 atau 1     |
+| unripe     | Binary    | Indikator kelas mentah       | 0 atau 1     |
+
+Setiap gambar seharusnya memiliki tepat satu label aktif bernilai 1, sedangkan tiga label lainnya bernilai 0. Citra RGB digunakan sebagai input untuk proses klasifikasi.
 
 ### 4.3 Kondisi Data
 
-Jelaskan kondisi dan permasalahan data:
+- **Missing Values:** Seluruh 6.412 nama file pada CSV berhasil dicocokkan dengan gambar yang tersedia.
+- **Duplicate Data:** Tidak ditemukan duplikasi gambar berdasarkan pemeriksaan SHA-256. Dari total 6.412 gambar, seluruhnya memiliki hash unik, sehingga tidak ditemukan gambar duplikat maupun duplikasi antarpartisi training, validation, dan testing.
+- **Outliers:** Ditemukan 114 gambar (1,78%) yang terindikasi sebagai outlier berdasarkan ukuran file (`file_size_kb`) menggunakan metode Interquartile Range (IQR). Tidak ditemukan outlier pada resolusi gambar (`width` dan `height`) maupun rasio aspek (`aspect_ratio`). Gambar yang terindikasi outlier belum tentu merupakan data yang tidak valid sehingga perlu pemeriksaan visual lebih lanjut sebelum dilakukan penanganan.
+- **Imbalanced Data:** Terdapat indikasi ketidakseimbangan kelas dengan distribusi awal:
 
-- **Missing Values:** [Ada/Tidak, berapa persen?]
-- **Duplicate Data:** [Ada/Tidak, berapa banyak?]
-- **Outliers:** [Ada/Tidak, pada fitur apa?]
-- **Imbalanced Data:** [Ada/Tidak, rasio kelas?]
-- **Noise:** [Jelaskan jika ada]
-- **Data Quality Issues:** [Jelaskan jika ada masalah lain]
-- **Asumsi Data (i.i.d., distribusi train-test, potensi data leakage):** [Jelaskan]
+  | Kelas     | Jumlah Gambar | Persentase |
+  | --------- | ------------: | ---------: |
+  | Overripe  |         1.831 |     28,56% |
+  | Ripe      |         1.676 |     26,14% |
+  | Underripe |         1.751 |     27,31% |
+  | Unripe    |         1.154 |     18,00% |
+  | **Total** |     **6.412** |   **100%** |
+
+  Imbalance ratio sebesar 1,59, dihitung dari jumlah kelas terbanyak dibandingkan kelas paling sedikit.
+
+- **Noise:** Belum diperiksa secara menyeluruh. Variasi pencahayaan, bayangan, dan kondisi visual citra menjadi aspek yang perlu dievaluasi.
+- **Data Quality Issues:** Ditemukan 622 data (9,70%) dengan format label yang tidak sesuai One-Hot Encoding. Sebanyak 5.790 data (90,30%) memiliki tepat satu label aktif, sedangkan 622 data terdiri dari label kosong (seluruh nilai 0) atau multi-label (lebih dari satu nilai 1). Seluruh 6.412 gambar berhasil ditemukan dan tidak terdapat gambar tanpa pasangan CSV.
+- **Asumsi Data (i.i.d., distribusi train-test, potensi data leakage):** Dataset dibagi menjadi training, validation, dan testing dengan proporsi masing-masing sekitar 87,49%, 8,34%, dan 4,16%. Data diasumsikan berasal dari distribusi yang serupa, tetapi kemiripan gambar antarpartisi masih perlu diperiksa untuk menghindari data leakage.
 
 ### 4.4 Exploratory Data Analysis (EDA) - (**OPSIONAL**)
 
-**Requirement:** Minimal 3 visualisasi yang bermakna dan insight-nya.
-**Contoh jenis visualisasi yang dapat digunakan:**
+#### Visualisasi 1: Distribusi Kelas Kematangan Buah Kelapa Sawit
 
-- Histogram (distribusi data)
-- Boxplot (deteksi outliers)
-- Heatmap korelasi (hubungan antar fitur)
-- Bar plot (distribusi kategori)
-- Scatter plot (hubungan 2 variabel)
-- Wordcloud (untuk text data)
-- Sample images (untuk image data)
-- Time series plot (untuk temporal data)
-- Confusion matrix heatmap
-- Class distribution plot
+![Class Distribution](./eda_outputs/01_class_distribution.png)
 
-#### Visualisasi 1: [Judul Visualisasi]
+**Insight:**
+Visualisasi menunjukkan distribusi jumlah gambar pada empat kelas kematangan, yaitu Overripe, Ripe, Underripe, dan Unripe, berdasarkan partisi training, validation, dan testing. Distribusi ini digunakan untuk mengetahui kelas dominan dan kelas minoritas serta mengevaluasi potensi ketidakseimbangan data yang dapat memengaruhi proses pelatihan model.
 
-[Insert gambar/plot]
+#### Visualisasi 2: Sampel Citra Setiap Kelas Kematangan
 
-**Insight:**  
-[Jelaskan apa yang dapat dipelajari dari visualisasi ini]
+![Sample Images](./eda_outputs/02_sample_images.png)
 
-#### Visualisasi 2: [Judul Visualisasi]
+**Insight:**
+Visualisasi menampilkan contoh citra dari masing-masing kelas kematangan buah kelapa sawit. Perbedaan dan kemiripan karakteristik visual antar kelas dapat diamati untuk memahami tantangan klasifikasi. Selain itu, variasi pencahayaan, bayangan, latar belakang, dan sudut pengambilan gambar menjadi faktor yang perlu diperhatikan dalam pengembangan model.
 
-[Insert gambar/plot]
+#### Visualisasi 3: Distribusi Ukuran File dan Deteksi Outliers
 
-**Insight:**  
-[Jelaskan apa yang dapat dipelajari dari visualisasi ini]
+![File Size Outliers](./eda_outputs/03_file_size_outliers.png)
 
-#### Visualisasi 3: [Judul Visualisasi]
-
-[Insert gambar/plot]
-
-**Insight:**  
-[Jelaskan apa yang dapat dipelajari dari visualisasi ini]
+**Insight:**
+Visualisasi menunjukkan persebaran ukuran file citra berdasarkan metode Interquartile Range (IQR). Ditemukan 114 gambar atau sekitar 1,78% dari keseluruhan dataset yang terindikasi sebagai outlier berdasarkan ukuran file. Nilai ekstrem tersebut menunjukkan adanya variasi ukuran penyimpanan gambar, tetapi tidak secara langsung menandakan kerusakan citra sehingga tidak menjadi dasar penghapusan data.
 
 ---
 
