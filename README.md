@@ -296,126 +296,401 @@ Metode ini dipilih karena dapat memberikan perhatian lebih besar kepada kelas de
 
 ---
 
-## 6. MODELING **[M + O]**
-
-> Setiap model (6.1, 6.2, 6.3) dijelaskan dalam dua fase: **Model Design [M]** (sub-bagian .1–.3) dan **Optimization [O]** (sub-bagian .4–.6).
+## 6. MODELING [M + O]
 
 ### 6.1 Model 1 — Baseline Model
 
-#### 6.1.1 Deskripsi Model **[M]**
+#### 6.1.1 Deskripsi Model [M]
 
-**Nama Model:** [Nama model, misal: Logistic Regression]  
-**Teori Singkat:**  
-[Jelaskan secara singkat bagaimana model ini bekerja]  
-**Alasan Pemilihan:**  
-[Mengapa memilih model ini sebagai baseline?]
+**Nama Model:** Support Vector Machine (SVM) dengan kernel Radial Basis Function (RBF).
 
-#### 6.1.2 Hypothesis Space & Inductive Bias **[M]**
+**Teori Singkat:**
 
-- **Model family / arsitektur:** [misal: model linear]
-- **Hypothesis space:** [himpunan fungsi yang dapat direpresentasikan, misal: batas keputusan linear]
-- **Inductive bias / asumsi:** [misal: hubungan fitur-target linear, fitur independen]
-- **Implikasi terhadap dataset Anda:** [apakah asumsi cocok dengan data?]
+Support Vector Machine (SVM) merupakan algoritma *supervised learning* yang digunakan untuk melakukan klasifikasi dengan mencari batas keputusan (*hyperplane*) terbaik yang memisahkan data dari kelas yang berbeda. SVM berusaha memaksimalkan jarak atau *margin* antara hyperplane dengan sampel terdekat dari masing-masing kelas sehingga dapat menghasilkan pemisahan kelas yang optimal.
 
-#### 6.1.3 Implementasi (Ringkas) **[M]**
+Pada penelitian ini, SVM menggunakan kernel Radial Basis Function (RBF) untuk mempelajari hubungan non-linear antara fitur visual dan tingkat kematangan tandan buah segar kelapa sawit. Sebelum proses klasifikasi, citra diubah menjadi fitur numerik melalui ekstraksi histogram warna HSV dan tekstur Gray-Level Co-occurrence Matrix (GLCM).
 
-```python
-# Contoh kode (opsional, bisa dipindah ke GitHub)
-from sklearn.linear_model import LogisticRegression
+**Alasan Pemilihan:**
 
-model_baseline = LogisticRegression(C=1.0, max_iter=100)
-model_baseline.fit(X_train, y_train)
-y_pred_baseline = model_baseline.predict(X_test)
-```
+SVM dipilih sebagai model baseline karena mampu bekerja dengan baik pada dataset berukuran terbatas dan fitur berdimensi menengah. Pemilihan fitur histogram HSV didasarkan pada karakteristik perubahan warna buah kelapa sawit selama proses pematangan. Sementara itu, fitur GLCM digunakan untuk merepresentasikan karakteristik tekstur permukaan buah.
 
-#### 6.1.4 Optimization: Objective, Hyperparameter & Regularisasi **[O]**
+Kombinasi fitur tersebut diharapkan dapat memberikan informasi yang cukup untuk membedakan empat tingkat kematangan, yaitu *overripe*, *ripe*, *underripe*, dan *unripe*. Selain itu, penggunaan kernel RBF memungkinkan model mempelajari pola hubungan non-linear yang mungkin tidak dapat dipisahkan menggunakan batas keputusan linear.
 
-**Objective/loss yang dioptimalkan:** [misal: log-loss + L2]  
-**Parameter yang digunakan:**
+#### 6.1.2 Hypothesis Space & Inductive Bias [M]
 
-```
-[Tuliskan parameter penting, contoh:]
-- C (regularization): 1.0
-- solver: 'lbfgs'
-- max_iter: 100
-```
+- **Model family / arsitektur:**
 
-#### 6.1.5 Hasil Awal **[O → P]**
+  Kernel-based Support Vector Classifier dengan kernel Radial Basis Function (RBF).
 
-**[Tuliskan hasil awal pada validation set; evaluasi akhir pada test set dijelaskan di Bab 7]**
+- **Hypothesis space:**
 
----
+  Himpunan fungsi keputusan yang dapat dibentuk melalui kombinasi kernel RBF pada ruang fitur hasil transformasi. Model dapat membentuk batas keputusan non-linear untuk memisahkan empat kelas tingkat kematangan buah kelapa sawit.
 
-### 6.2 Model 2 — ML / Advanced Model
+- **Inductive bias / asumsi:**
 
-#### 6.2.1 Deskripsi Model **[M]**
+  SVM memiliki asumsi bahwa pemisahan kelas yang baik dapat diperoleh dengan mencari batas keputusan yang memaksimalkan margin pada ruang fitur. Penggunaan kernel RBF memungkinkan model mempelajari hubungan non-linear antarfitur tanpa harus melakukan transformasi fitur secara eksplisit.
 
-**Nama Model:** [Nama model, misal: Random Forest / XGBoost]  
-**Teori Singkat:**  
-[Jelaskan bagaimana algoritma ini bekerja]
+- **Implikasi terhadap dataset:**
 
-**Alasan Pemilihan:**  
-[Mengapa memilih model ini?]
+  Asumsi tersebut relevan dengan karakteristik dataset karena perbedaan tingkat kematangan buah kelapa sawit tidak hanya ditentukan oleh satu karakteristik warna, tetapi juga dapat dipengaruhi oleh kombinasi warna dan tekstur. Oleh karena itu, penggunaan kernel RBF diharapkan mampu menangkap pola pemisahan antar kelas yang lebih kompleks.
 
-**Keunggulan:**
+  Namun, performa SVM tetap bergantung pada kualitas fitur hasil ekstraksi manual. Informasi visual yang tidak direpresentasikan oleh histogram HSV dan GLCM tidak dapat dipelajari secara langsung oleh model.
 
-- [Sebutkan keunggulan]
+#### 6.1.3 Implementasi (Ringkas) [M]
 
-**Kelemahan:**
+Implementasi model dilakukan menggunakan Python dan Scikit-learn melalui Google Colab. Dataset yang digunakan merupakan hasil proses *data preparation* pada Bab 5, dengan total 5.790 gambar yang terdiri dari 5.074 data training, 474 data validation, dan 242 data testing.
 
-- [Sebutkan kelemahan]
+Sebelum proses klasifikasi, setiap citra diubah menjadi 80 fitur numerik yang terdiri dari:
 
-#### 6.2.2 Hypothesis Space & Inductive Bias **[M]**
+1. **Histogram HSV (32 fitur):** Mengekstraksi distribusi warna pada kanal Hue, Saturation, dan Value.
+2. **GLCM (48 fitur):** Mengekstraksi karakteristik tekstur berdasarkan contrast, dissimilarity, homogeneity, energy, correlation, dan ASM pada beberapa jarak dan arah.
 
-- **Model family / arsitektur:** [misal: ensemble pohon keputusan]
-- **Hypothesis space:** [fungsi non-linear piecewise, interaksi fitur otomatis, dll.]
-- **Inductive bias / asumsi:** [misal: data tabular dengan struktur ambang/threshold]
-- **Perbandingan dengan baseline:** [apa yang bisa dipelajari model ini yang tidak bisa baseline?]
+Citra diubah ukurannya menjadi 128 × 128 piksel untuk proses ekstraksi fitur. Selanjutnya, seluruh fitur digabungkan menjadi *feature matrix* yang digunakan sebagai masukan model SVM.
 
-#### 6.2.3 Implementasi (Ringkas) **[M]**
+Standardisasi fitur dilakukan menggunakan `StandardScaler` yang ditempatkan dalam `Pipeline`. Dengan demikian, proses standardisasi hanya mempelajari karakteristik data training dan diterapkan pada validation maupun test tanpa melakukan proses *fit* ulang.
+
+Implementasi model:
 
 ```python
-# Contoh kode
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
-model_advanced = RandomForestClassifier(
-    n_estimators=100,
-    max_depth=10,
-    random_state=42
-)
-model_advanced.fit(X_train, y_train)
-y_pred_advanced = model_advanced.predict(X_test)
+model_svm = Pipeline([
+    ("scaler", StandardScaler()),
+    ("classifier", SVC(
+        kernel="rbf",
+        C=1.0,
+        gamma="scale",
+        class_weight="balanced",
+        random_state=42
+    ))
+])
+
+model_svm.fit(X_train, y_train)
+
+y_valid_pred = model_svm.predict(X_valid)
 ```
 
-#### 6.2.4 Optimization: Hyperparameter Tuning **[O]**
+#### 6.1.4 Optimization: Objective, Hyperparameter & Regularisasi [O]
+
+**Objective / loss yang dioptimalkan:**
+
+SVM mengoptimalkan fungsi objektif yang menggabungkan regularisasi dan *hinge loss* untuk memperoleh batas keputusan dengan margin yang baik sekaligus meminimalkan kesalahan klasifikasi. Pada implementasi klasifikasi multi-kelas Scikit-learn, `SVC` menggunakan pendekatan *One-vs-One* untuk membentuk pemisah antar pasangan kelas.
 
 **Parameter yang digunakan:**
 
-```
-[Tuliskan parameter penting, contoh:]
-- n_estimators: 100
-- max_depth: 10
-- learning_rate: 0.1
-- min_samples_split: 2
-```
+| Parameter | Nilai | Keterangan |
+|---|---|---|
+| kernel | `rbf` | Menggunakan kernel non-linear |
+| C | 1.0 | Mengatur penalti terhadap kesalahan klasifikasi |
+| gamma | `scale` | Menentukan pengaruh setiap sampel dalam kernel RBF |
+| class_weight | `balanced` | Menyesuaikan bobot berdasarkan distribusi kelas training |
+| random_state | 42 | Menetapkan nilai random state |
 
-**Hyperparameter Tuning (WAJIB minimal 1 metode sederhana):**
+**Regularisasi:**
 
-- Metode: [Grid Search / Random Search / Bayesian Optimization]
-- Search space: [rentang parameter yang dicoba]
-- Skema validasi: [k-fold CV / validation set]
-- Best parameters: [...]
-- Skor validasi sebelum vs sesudah tuning: [...]
+Pengendalian kompleksitas model dilakukan melalui parameter `C` pada SVM. Nilai `C` mengatur keseimbangan antara margin yang lebih luas dan penalti terhadap kesalahan klasifikasi. Nilai `C` yang lebih besar memberikan penalti lebih tinggi terhadap kesalahan training, sedangkan nilai yang lebih kecil memberikan toleransi kesalahan yang lebih besar.
 
-#### 6.2.5 Kontrol Overfitting **[O]**
+Pada eksperimen baseline ini digunakan nilai `C = 1.0` sebagai konfigurasi awal. Parameter tersebut belum melalui proses hyperparameter tuning dan akan menjadi acuan untuk eksperimen optimasi selanjutnya.
 
-[Jelaskan regularisasi/pembatasan kompleksitas yang dipakai, misal: max_depth, min_samples_leaf, early stopping pada boosting]
+Standardisasi fitur menggunakan `StandardScaler` juga diterapkan agar perbedaan skala antarfitur tidak menyebabkan fitur tertentu mendominasi proses pembelajaran.
 
-#### 6.2.6 Hasil Model **[O → P]**
+#### 6.1.5 Hasil Awal [O → P]
 
-**[Tuliskan hasil pada validation set; evaluasi akhir dijelaskan di Bab 7]**
+Evaluasi awal dilakukan menggunakan validation set yang terdiri dari 474 gambar. Data testing tidak digunakan pada tahap ini karena akan dipertahankan untuk evaluasi akhir seluruh model pada Bab 7.
+
+**Hasil Evaluasi Validation Set:**
+
+| Metrik | Hasil |
+|---|---:|
+| Accuracy | 75,95% |
+| Precision Macro | 76,52% |
+| Recall Macro | 76,44% |
+| F1-Score Macro | 76,39% |
+| F1-Score Weighted | 76,02% |
+| Waktu Training | 2,30 detik |
+
+Berdasarkan hasil tersebut, model SVM memperoleh accuracy sebesar 75,95%. Nilai precision macro sebesar 76,52%, recall macro sebesar 76,44%, dan F1-score macro sebesar 76,39%. Hasil ini menunjukkan bahwa model baseline mampu mengklasifikasikan sebagian besar citra dengan cukup baik serta memiliki performa yang relatif seimbang pada keempat kelas.
+
+**Hasil Klasifikasi Setiap Kelas:**
+
+| Kelas | Precision | Recall | F1-Score | Support |
+|---|---:|---:|---:|---:|
+| Overripe | 79% | 71% | 75% | 136 |
+| Ripe | 66% | 73% | 69% | 128 |
+| Underripe | 82% | 81% | 82% | 118 |
+| Unripe | 79% | 80% | 80% | 92 |
+| **Macro Average** | **77%** | **76%** | **76%** | **474** |
+| **Weighted Average** | **76%** | **76%** | **76%** | **474** |
+
+Berdasarkan hasil klasifikasi setiap kelas, model memperoleh performa terbaik pada kelas *underripe* dengan F1-score sebesar 82%. Sementara itu, kelas *ripe* memperoleh F1-score terendah sebesar 69%. Hal ini menunjukkan bahwa model masih mengalami kesulitan dalam membedakan karakteristik visual antara beberapa tingkat kematangan, khususnya kelas *ripe*.
+
+**Analisis Confusion Matrix:**
+
+Hasil confusion matrix menunjukkan bahwa sebagian besar prediksi benar berada pada diagonal utama. Rincian hasil klasifikasi adalah sebagai berikut:
+
+| Kelas Aktual | Overripe | Ripe | Underripe | Unripe |
+|---|---:|---:|---:|---:|
+| Overripe | 97 | 34 | 1 | 4 |
+| Ripe | 17 | 93 | 13 | 5 |
+| Underripe | 4 | 7 | 96 | 11 |
+| Unripe | 5 | 6 | 7 | 74 |
+
+Pada kelas *overripe*, model berhasil mengklasifikasikan 97 dari 136 gambar dengan benar. Kesalahan terbesar terjadi ketika 34 gambar *overripe* diprediksi sebagai *ripe*. Hal ini menunjukkan adanya kemiripan karakteristik visual antara buah yang telah lewat matang dan buah yang matang.
+
+Pada kelas *ripe*, sebanyak 93 dari 128 gambar berhasil diklasifikasikan dengan benar. Kesalahan prediksi paling banyak terjadi pada kelas *overripe* sebanyak 17 gambar dan *underripe* sebanyak 13 gambar. Kondisi ini menunjukkan bahwa kelas *ripe* masih memiliki karakteristik visual yang tumpang tindih dengan tingkat kematangan di sekitarnya.
+
+Pada kelas *underripe*, model berhasil mengklasifikasikan 96 dari 118 gambar dengan benar. Kesalahan klasifikasi paling banyak terjadi pada kelas *unripe* sebanyak 11 gambar. Sementara itu, pada kelas *unripe*, sebanyak 74 dari 92 gambar berhasil diklasifikasikan dengan benar.
+
+Secara keseluruhan, hasil tersebut menunjukkan bahwa SVM mampu mempelajari pola warna dan tekstur untuk membedakan tingkat kematangan buah kelapa sawit. Namun, kesalahan klasifikasi masih ditemukan pada kelas-kelas yang memiliki kemiripan visual, terutama antara *overripe* dan *ripe*.
+
+**Kesimpulan Model Baseline:**
+
+Model SVM dengan kernel RBF menghasilkan accuracy validation sebesar 75,95% dan F1-score macro sebesar 76,39%. Hasil ini menunjukkan bahwa kombinasi histogram HSV dan fitur tekstur GLCM dapat digunakan sebagai representasi awal untuk klasifikasi tingkat kematangan buah kelapa sawit.
+
+Model ini selanjutnya digunakan sebagai baseline pembanding terhadap Random Forest pada tahap pengembangan model advanced. Perbandingan dilakukan menggunakan validation set dan metrik evaluasi yang sama untuk mengetahui apakah pendekatan ensemble dapat meningkatkan kemampuan klasifikasi dibandingkan model baseline.
 
 ---
+
+### 6.2 Model 2 — Machine Learning / Advanced Model
+
+#### 6.2.1 Deskripsi Model
+
+**Nama Model:** Random Forest Classifier
+
+**Teori Singkat:**
+
+Random Forest merupakan algoritma *supervised learning* berbasis *ensemble learning* yang menggabungkan sejumlah pohon keputusan (*Decision Tree*) untuk menghasilkan prediksi klasifikasi. Setiap pohon dibangun menggunakan sampel data yang dipilih secara acak melalui teknik *Bootstrap Aggregating* (Bagging), serta mempertimbangkan subset fitur secara acak ketika menentukan percabangan.
+
+Dalam proses klasifikasi, setiap pohon menghasilkan prediksi kelas, kemudian Random Forest menentukan hasil akhir berdasarkan suara mayoritas (*majority voting*) dari seluruh pohon yang dibentuk.
+
+Random Forest memiliki kemampuan menangani hubungan nonlinier antara fitur dan kelas, serta dapat memberikan informasi mengenai tingkat kepentingan masing-masing fitur (*feature importance*).
+
+**Alasan Pemilihan:**
+
+Random Forest dipilih sebagai model kedua untuk membandingkan performa algoritma berbasis *ensemble learning* terhadap model baseline SVM. Algoritma ini memiliki beberapa keunggulan yang relevan dengan klasifikasi tingkat kematangan buah kelapa sawit, yaitu:
+
+1. Mampu mempelajari hubungan nonlinier antara karakteristik warna dan tekstur buah.
+2. Menggabungkan banyak pohon keputusan sehingga prediksi tidak bergantung pada satu pohon saja.
+3. Tidak memerlukan normalisasi atau standardisasi fitur seperti yang diperlukan oleh SVM.
+4. Menyediakan informasi *feature importance* untuk mengetahui fitur yang paling berkontribusi terhadap proses klasifikasi.
+5. Mendukung pengaturan *class weight* untuk mempertimbangkan distribusi jumlah sampel pada setiap kelas.
+
+Pada penelitian ini, Random Forest menggunakan fitur hasil ekstraksi manual berupa histogram warna HSV dan tekstur GLCM. Dengan demikian, perbandingan terhadap SVM dapat dilakukan menggunakan representasi fitur yang sama.
+
+#### 6.2.2 Input Data dan Konfigurasi Model
+
+Random Forest menggunakan matriks fitur yang sama dengan model SVM, yaitu sebanyak 80 fitur yang terdiri dari:
+
+| Jenis Fitur | Jumlah Fitur | Keterangan |
+|---|---:|---|
+| HSV Histogram | 32 | Representasi distribusi warna pada kanal Hue, Saturation, dan Value |
+| GLCM | 48 | Representasi karakteristik tekstur berdasarkan enam properti GLCM |
+| **Total** | **80** | **Gabungan fitur warna dan tekstur** |
+
+Data dibagi berdasarkan pembagian dataset yang telah ditentukan sebelumnya tanpa mengubah komposisi *train*, *validation*, dan *test*.
+
+| Dataset | Jumlah Data | Penggunaan |
+|---|---:|---|
+| Training | 5.074 | Melatih model |
+| Validation | 474 | Evaluasi dan pemilihan konfigurasi model |
+| Test | 242 | Evaluasi akhir pada tahap pengujian |
+| **Total** | **5.790** | |
+
+Data test tidak digunakan dalam proses pelatihan maupun pencarian parameter terbaik. Pengujian akhir terhadap data test dilakukan pada tahap evaluasi model.
+
+**Konfigurasi Random Forest Awal:**
+
+| Parameter | Nilai |
+|---|---|
+| n_estimators | 200 |
+| max_depth | None |
+| min_samples_split | 2 |
+| min_samples_leaf | 1 |
+| max_features | sqrt |
+| class_weight | balanced |
+| random_state | 42 |
+| n_jobs | -1 |
+
+Parameter `n_estimators=200` berarti model membangun 200 pohon keputusan. Parameter `max_features=sqrt` mengatur jumlah fitur yang dipertimbangkan secara acak pada setiap percabangan. Sementara itu, `class_weight=balanced` digunakan untuk menyesuaikan bobot kelas berdasarkan distribusi sampel pada data training.
+
+#### 6.2.3 Proses Pelatihan dan Optimasi Model
+
+Pelatihan awal dilakukan menggunakan seluruh data training dengan konfigurasi parameter awal. Setelah proses pelatihan selesai, model dievaluasi menggunakan data validation untuk memperoleh nilai accuracy, precision, recall, dan F1-score.
+
+Untuk memperoleh konfigurasi yang lebih optimal, dilakukan pencarian parameter menggunakan teknik **Grid Search Cross-Validation** dengan skema 5-fold Stratified Cross-Validation.
+
+Parameter yang diuji meliputi:
+
+| Parameter | Kandidat Nilai |
+|---|---|
+| n_estimators | 100, 200 |
+| max_depth | None, 20, 30 |
+| min_samples_split | 2, 5 |
+| min_samples_leaf | 1, 2 |
+| max_features | sqrt |
+
+Pencarian dilakukan terhadap 24 kombinasi parameter dengan 5-fold cross-validation sehingga menghasilkan total 120 proses pelatihan dan validasi internal.
+
+Metrik yang digunakan sebagai dasar pemilihan konfigurasi terbaik adalah **F1-macro**. Metrik ini dipilih karena memberikan bobot yang sama kepada setiap kelas sehingga performa klasifikasi tidak hanya ditentukan oleh kelas dengan jumlah sampel lebih banyak.
+
+Hasil pencarian parameter memperoleh konfigurasi terbaik sebagai berikut:
+
+| Parameter | Nilai Terbaik |
+|---|---|
+| n_estimators | 200 |
+| max_depth | 20 |
+| min_samples_split | 2 |
+| min_samples_leaf | 1 |
+| max_features | sqrt |
+| class_weight | balanced |
+| random_state | 42 |
+
+Nilai F1-macro terbaik dari proses 5-fold cross-validation adalah **0,7892 atau 78,92%**, dengan standar deviasi sebesar **0,006565**.
+
+Konfigurasi tersebut kemudian digunakan untuk membentuk model Random Forest hasil optimasi. Model terbaik dilatih kembali menggunakan seluruh data training dan selanjutnya dievaluasi pada data validation.
+
+#### 6.2.4 Hasil Evaluasi Model
+
+Evaluasi dilakukan terhadap dua konfigurasi, yaitu Random Forest awal dan Random Forest hasil optimasi. Keduanya menggunakan data validation yang sama sebanyak 474 gambar.
+
+**A. Hasil Random Forest Awal**
+
+Hasil evaluasi model Random Forest awal ditunjukkan pada tabel berikut.
+
+| Metrik | Nilai |
+|---|---:|
+| Accuracy | 83,54% |
+| Precision Macro | 83,29% |
+| Recall Macro | 82,94% |
+| F1-Macro | 82,96% |
+| F1-Weighted | 83,36% |
+| Waktu Pelatihan | 10,7645 detik |
+
+Berdasarkan hasil tersebut, model Random Forest awal memperoleh accuracy sebesar 83,54% dan F1-macro sebesar 82,96%. Hasil ini menunjukkan bahwa model mampu mengklasifikasikan sebagian besar gambar dengan cukup baik pada data validation.
+
+Rincian performa berdasarkan masing-masing kelas adalah sebagai berikut.
+
+| Kelas | Precision | Recall | F1-Score | Support |
+|---|---:|---:|---:|---:|
+| Overripe | 0,85 | 0,95 | 0,90 | 136 |
+| Ripe | 0,85 | 0,75 | 0,80 | 128 |
+| Underripe | 0,83 | 0,85 | 0,84 | 118 |
+| Unripe | 0,81 | 0,77 | 0,79 | 92 |
+| **Macro Average** | **0,83** | **0,83** | **0,83** | **474** |
+| **Weighted Average** | **0,84** | **0,84** | **0,83** | **474** |
+
+Berdasarkan hasil klasifikasi per kelas, kategori *overripe* memperoleh F1-score tertinggi sebesar 0,90 dengan recall sebesar 0,95. Hal ini menunjukkan bahwa model mampu mengenali sebagian besar sampel kategori tersebut.
+
+Sementara itu, kategori *unripe* memperoleh F1-score sebesar 0,79, menjadi nilai terendah di antara keempat kelas. Kategori *ripe* juga memiliki recall sebesar 0,75, yang menunjukkan masih terdapat sampel matang yang belum berhasil dikenali dengan tepat.
+
+**B. Hasil Random Forest Setelah Optimasi**
+
+Setelah proses Grid Search selesai, model dengan parameter terbaik dievaluasi kembali menggunakan data validation.
+
+| Metrik | Nilai |
+|---|---:|
+| Accuracy | 83,12% |
+| Precision Macro | 82,68% |
+| Recall Macro | 82,47% |
+| F1-Macro | 82,50% |
+| F1-Weighted | 83,00% |
+
+Hasil klasifikasi berdasarkan masing-masing kelas adalah sebagai berikut.
+
+| Kelas | Precision | Recall | F1-Score | Support |
+|---|---:|---:|---:|---:|
+| Overripe | 0,86 | 0,93 | 0,89 | 136 |
+| Ripe | 0,83 | 0,77 | 0,80 | 128 |
+| Underripe | 0,83 | 0,83 | 0,83 | 118 |
+| Unripe | 0,79 | 0,76 | 0,77 | 92 |
+| **Macro Average** | **0,83** | **0,82** | **0,82** | **474** |
+| **Weighted Average** | **0,83** | **0,83** | **0,83** | **474** |
+
+Model hasil optimasi memperoleh accuracy sebesar 83,12% dan F1-macro sebesar 82,50%. Meskipun proses optimasi telah menghasilkan konfigurasi parameter terbaik berdasarkan cross-validation, performa pada data validation sedikit lebih rendah dibandingkan model Random Forest awal.
+
+#### 6.2.5 Analisis Feature Importance
+
+Salah satu keunggulan Random Forest adalah kemampuannya menghasilkan nilai *feature importance* untuk memperkirakan kontribusi relatif setiap fitur terhadap proses pengambilan keputusan model.
+
+Berdasarkan hasil analisis terhadap model Random Forest hasil optimasi, 20 fitur dengan nilai kepentingan tertinggi ditunjukkan pada tabel berikut.
+
+| Peringkat | Fitur | Importance |
+|---:|---|---:|
+| 1 | hsv_h_15 | 0,059333 |
+| 2 | hsv_h_14 | 0,039327 |
+| 3 | hsv_h_13 | 0,032335 |
+| 4 | hsv_h_12 | 0,031116 |
+| 5 | hsv_h_3 | 0,025775 |
+| 6 | hsv_h_4 | 0,024410 |
+| 7 | hsv_h_11 | 0,022685 |
+| 8 | hsv_s_5 | 0,020792 |
+| 9 | hsv_h_0 | 0,020742 |
+| 10 | hsv_v_4 | 0,020092 |
+| 11 | hsv_s_4 | 0,019512 |
+| 12 | hsv_h_10 | 0,017951 |
+| 13 | hsv_h_2 | 0,017670 |
+| 14 | hsv_s_1 | 0,017637 |
+| 15 | hsv_v_3 | 0,016144 |
+| 16 | hsv_s_3 | 0,016066 |
+| 17 | glcm_correlation_d1_a2 | 0,015787 |
+| 18 | hsv_h_1 | 0,015650 |
+| 19 | hsv_s_6 | 0,015607 |
+| 20 | hsv_h_9 | 0,014851 |
+
+Hasil tersebut menunjukkan bahwa sebagian besar fitur dengan nilai kepentingan tertinggi berasal dari histogram warna HSV, terutama kanal Hue. Fitur `hsv_h_15` menjadi fitur dengan nilai importance tertinggi sebesar 0,059333.
+
+Temuan ini mengindikasikan bahwa informasi distribusi warna memiliki kontribusi yang cukup besar dalam proses klasifikasi tingkat kematangan buah kelapa sawit pada model yang digunakan. Hal tersebut relevan karena perubahan tingkat kematangan buah dapat disertai perubahan karakteristik warna.
+
+Meskipun demikian, fitur tekstur GLCM juga memberikan kontribusi terhadap proses klasifikasi. Salah satu contohnya adalah `glcm_correlation_d1_a2` yang memperoleh nilai importance sebesar 0,015787.
+
+Nilai *feature importance* tersebut merupakan ukuran kontribusi relatif berdasarkan mekanisme internal Random Forest, bukan bukti hubungan sebab-akibat. Oleh karena itu, hasil ini digunakan untuk memahami karakteristik fitur yang dimanfaatkan model, bukan untuk menyimpulkan bahwa satu fitur secara langsung menentukan tingkat kematangan buah.
+
+#### 6.2.6 Analisis Overfitting dan Perbandingan Model
+
+**A. Analisis Overfitting**
+
+Analisis overfitting dilakukan dengan membandingkan performa model pada data training dan validation. Berdasarkan hasil evaluasi model Random Forest hasil optimasi, diperoleh nilai berikut.
+
+| Dataset | Accuracy | F1-Macro |
+|---|---:|---:|
+| Training | 100,00% | 100,00% |
+| Validation | 83,12% | 82,50% |
+
+Terdapat selisih performa sebesar 16,88 poin persentase pada accuracy dan 17,50 poin persentase pada F1-macro antara data training dan validation.
+
+Kondisi tersebut menunjukkan adanya indikasi overfitting. Model mampu mempelajari pola pada data training secara sangat baik, tetapi performanya menurun ketika menghadapi data yang tidak digunakan dalam proses pelatihan.
+
+Walaupun proses optimasi telah membatasi kedalaman pohon menjadi 20, model masih memperoleh performa sempurna pada data training. Hal ini menunjukkan bahwa konfigurasi hasil optimasi belum sepenuhnya mengatasi overfitting.
+
+Beberapa pendekatan yang dapat dipertimbangkan untuk penelitian lanjutan antara lain meningkatkan nilai `min_samples_leaf`, meningkatkan `min_samples_split`, membatasi kedalaman pohon, serta mengevaluasi kembali jumlah fitur yang dipertimbangkan pada setiap percabangan.
+
+**B. Perbandingan SVM dan Random Forest**
+
+Untuk mengetahui performa relatif kedua algoritma machine learning, dilakukan perbandingan hasil evaluasi pada data validation.
+
+| Model | Accuracy | Precision Macro | Recall Macro | F1-Macro |
+|---|---:|---:|---:|---:|
+| SVM Baseline | 75,95% | 76,52% | 76,44% | 76,39% |
+| Random Forest Initial | 83,54% | 83,29% | 82,94% | 82,96% |
+| Random Forest Tuned | 83,12% | 82,68% | 82,47% | 82,50% |
+
+Berdasarkan tabel tersebut, Random Forest awal memperoleh performa terbaik dengan accuracy sebesar 83,54% dan F1-macro sebesar 82,96%. Dibandingkan SVM baseline, Random Forest awal mengalami peningkatan accuracy sebesar 7,59 poin persentase dan F1-macro sebesar 6,57 poin persentase.
+
+Sementara itu, Random Forest hasil optimasi memperoleh accuracy sebesar 83,12% dan F1-macro sebesar 82,50%. Hasil ini masih lebih tinggi dibandingkan SVM baseline, tetapi sedikit lebih rendah dibandingkan Random Forest awal.
+
+Dengan demikian, proses Grid Search berhasil menemukan konfigurasi terbaik berdasarkan evaluasi 5-fold cross-validation, tetapi belum menghasilkan peningkatan performa pada data validation. Hal ini menunjukkan bahwa nilai terbaik pada cross-validation tidak selalu menghasilkan performa validasi eksternal yang lebih tinggi.
+
+**Kesimpulan Model Random Forest**
+
+Berdasarkan seluruh hasil eksperimen, Random Forest mampu memberikan performa klasifikasi yang lebih baik dibandingkan SVM baseline pada data validation dengan representasi fitur HSV dan GLCM yang sama.
+
+Konfigurasi Random Forest awal memperoleh hasil terbaik dengan accuracy sebesar 83,54% dan F1-macro sebesar 82,96%. Meskipun model hasil optimasi memperoleh konfigurasi terbaik berdasarkan cross-validation, performa validasinya sedikit lebih rendah, yaitu accuracy sebesar 83,12% dan F1-macro sebesar 82,50%.
+
+Hasil analisis *feature importance* juga menunjukkan bahwa fitur histogram warna HSV, khususnya kanal Hue, memiliki kontribusi relatif yang dominan dalam proses klasifikasi. Namun, adanya selisih performa antara data training dan validation menunjukkan bahwa model masih memiliki indikasi overfitting.
+
+Oleh karena itu, Random Forest awal dapat dipertahankan sebagai konfigurasi dengan performa validasi terbaik untuk dibandingkan dengan model deep learning pada eksperimen selanjutnya. Evaluasi akhir terhadap data test tetap dilakukan pada tahap pengujian akhir agar data tersebut tidak terlibat dalam pemilihan model.
 
 ### 6.3 Model 3 — Deep Learning Model (WAJIB)
 
